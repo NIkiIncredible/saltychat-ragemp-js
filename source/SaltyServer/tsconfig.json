@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es6",
+        "sourceMap": true,
+        "outDir": "../../dist/packages/SaltyChat/",
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "moduleResolution": "node"
+    },
+    "Files": [
+        "Radio.ts",
+        "VoiceManager.ts",
+        "VoiceClients.ts"
+    ]
+}

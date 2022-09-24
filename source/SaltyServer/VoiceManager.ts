@@ -1,1 +1,129 @@
+import { v4 as uuidv4 } from 'uuid';
 
+import {RadioChannel} from "./Radio";
+import {VoiceClient} from './VoiceClient'
+import {VoiceRanges} from "../SaltyShared/SharedData";
+import Event from "../SaltyShared/Event";
+
+export class VoiceManager {
+    //#region Properties
+    public static Instance: VoiceManager;
+
+    public ServerUniqueIdentifier: string;
+    public MinimumPluginVersion: string;
+    public SoundPack: string;
+    public IngameChannel: string;
+    public IngameChannelPassword: string;
+    public SwissChannels: number[] = [];
+
+    public RadioTowers: Vector3Mp[] =
+        [
+            new mp.Vector3(552.8169, -27.8083, 94.87936),
+            new mp.Vector3(758.5276, 1273.74, 360.2965),
+            new mp.Vector3(1857.389, 3694.529, 38.9618),
+            new mp.Vector3(-448.2019, 6019.807, 36.62916)
+        ];
+
+    private VoiceClients: () => VoiceClient[] = (): VoiceClient[] => {
+        return Array.from(this._voiceClients.values());
+    };
+    private _voiceClients: Map<PlayerMp, VoiceClient> = new Map<PlayerMp, VoiceClient>();
+
+
+    private RadioChannels: () => RadioChannel[] = (): RadioChannel[] => {
+        return this._radioChannels
+    }
+    private _radioChannels: RadioChannel[] = [];
+    //#endregion
+
+    //#region CTOR
+    constructor() {
+        VoiceManager.Instance = this;
+        mp.events.add({
+            "sSaltyChat-OnStart": () => {
+                this.OnResourceStart();
+            },
+            "playerJoin": (player: PlayerMp) => {
+                this.OnPlayerConnected(player);
+            },
+            "playerQuit": (client: PlayerMp, disconnectionType: string, reason: string) => {
+                this.OnPlayerDisconnected(client, disconnectionType, reason);
+            }
+
+        })
+    }
+
+    //#endregion
+
+    //#region Server Events
+    public void
+
+    OnResourceStart(): void {
+        this.ServerUniqueIdentifier = "ciGfYS6rTVThOtNNBAh4ssxdb3o=";
+        this.MinimumPluginVersion = "";
+        this.SoundPack = "default";
+        this.IngameChannel = "3";
+        this.IngameChannelPassword = "5V88FWWME615";
+
+        let swissChannelIds: string = "";
+
+        if (swissChannelIds !== null || swissChannelIds.length !== 0) {
+            this.SwissChannels = swissChannelIds.split(',').map(str => parseInt(str));
+        }
+    }
+
+    OnPlayerConnected(client: PlayerMp): void {
+        let voiceClient: VoiceClient;
+
+        voiceClient = new VoiceClient(client, this.GetTeamSpeakName(), VoiceRanges[1]);
+        this._voiceClients.set(client, voiceClient);
+
+        client.call(Event.SaltyChat_Initialize,
+            [voiceClient.TeamSpeakName,
+                this.ServerUniqueIdentifier,
+                this.SoundPack,
+                this.IngameChannel,
+                this.IngameChannelPassword]);
+
+        this.VoiceClients().forEach((cl: VoiceClient) => {
+            client.call(Event.SaltyChat_UpdateClient, [cl.Player.id, cl.TeamSpeakName, cl.VoiceRange]);
+            cl.Player.call(Event.SaltyChat_UpdateClient, [voiceClient.Player.id, voiceClient.TeamSpeakName, voiceClient.VoiceRange]);
+        })
+    }
+
+    OnPlayerDisconnected(client: PlayerMp, disconnectionType: string, reason: string): void {
+        let voiceClient: VoiceClient = this._voiceClients.get(client);
+        if (voiceClient == null)
+            return;
+
+        this._voiceClients.delete(client);
+
+        this.RadioChannels().filter(c => c.IsMember(voiceClient)).forEach((radioChannel: RadioChannel) => {
+            radioChannel.RemoveMember(voiceClient);
+        })
+        this.VoiceClients().forEach((cl: VoiceClient) => {
+            cl.Player.call(Event.SaltyChat_Disconnected, [voiceClient.Player.id]);
+        })
+    }
+    //#endregion
+
+    //#region Methods
+    GetTeamSpeakName(): string {
+        let name: string;
+        do {
+            let uuid = uuidv4()
+            name = uuid.replace("-", "");
+            console.log("uuid", uuidv4())
+            console.log(name);
+            if (name.length > 30) {
+                name = name.slice(0, 29);
+            }
+            console.log(name);
+        } while (Array.from(this._voiceClients.values()).find(c => c.TeamSpeakName == name));
+        return name;
+    }
+
+    //#endregion
+    //#region Helper
+    //#endregion
+}

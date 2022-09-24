@@ -1,19 +1,26 @@
 var Command;
 (function (Command) {
-    Command[Command["Initiate"] = 0] = "Initiate";
-    Command[Command["Ping"] = 1] = "Ping";
-    Command[Command["Pong"] = 2] = "Pong";
-    Command[Command["StateUpdate"] = 3] = "StateUpdate";
-    Command[Command["SelfStateUpdate"] = 4] = "SelfStateUpdate";
-    Command[Command["PlayerStateUpdate"] = 5] = "PlayerStateUpdate";
-    Command[Command["RemovePlayer"] = 6] = "RemovePlayer";
-    Command[Command["PhoneCommunicationUpdate"] = 7] = "PhoneCommunicationUpdate";
-    Command[Command["StopPhoneCommunication"] = 8] = "StopPhoneCommunication";
-    Command[Command["RadioTowerUpdate"] = 9] = "RadioTowerUpdate";
-    Command[Command["RadioCommunicationUpdate"] = 10] = "RadioCommunicationUpdate";
-    Command[Command["StopRadioCommunication"] = 11] = "StopRadioCommunication";
-    Command[Command["PlaySound"] = 12] = "PlaySound";
-    Command[Command["StopSound"] = 13] = "StopSound";
+    Command[Command["PluginState"] = 0] = "PluginState";
+    Command[Command["Initiate"] = 1] = "Initiate";
+    Command[Command["Reset"] = 2] = "Reset";
+    Command[Command["Ping"] = 3] = "Ping";
+    Command[Command["Pong"] = 4] = "Pong";
+    Command[Command["InstanceState"] = 5] = "InstanceState";
+    Command[Command["SoundState"] = 6] = "SoundState";
+    Command[Command["SelfStateUpdate"] = 7] = "SelfStateUpdate";
+    Command[Command["PlayerStateUpdate"] = 8] = "PlayerStateUpdate";
+    Command[Command["BulkUpdate"] = 9] = "BulkUpdate";
+    Command[Command["RemovePlayer"] = 10] = "RemovePlayer";
+    Command[Command["TalkState"] = 11] = "TalkState";
+    Command[Command["PlaySound"] = 18] = "PlaySound";
+    Command[Command["StopSound"] = 19] = "StopSound";
+    Command[Command["PhoneCommunicationUpdate"] = 20] = "PhoneCommunicationUpdate";
+    Command[Command["StopPhoneCommunication"] = 21] = "StopPhoneCommunication";
+    Command[Command["RadioCommunicationUpdate"] = 30] = "RadioCommunicationUpdate";
+    Command[Command["StopRadioCommunication"] = 31] = "StopRadioCommunication";
+    Command[Command["RadioTowerUpdate"] = 32] = "RadioTowerUpdate";
+    Command[Command["MegaphoneCommunicationUpdate"] = 40] = "MegaphoneCommunicationUpdate";
+    Command[Command["StopMegaphoneCommunication"] = 41] = "StopMegaphoneCommunication";
 })(Command || (Command = {}));
 var PluginError;
 (function (PluginError) {
@@ -327,7 +334,7 @@ class VoiceManager {
                 mp.gui.chat.push("[Salty Chat] Error: " + error.Error + " | Message: " + error.Message);
             }
         }
-        catch {
+        catch (_a) {
             mp.gui.chat.push("[Salty Chat] We got an error, but couldn't deserialize it...");
         }
     }
