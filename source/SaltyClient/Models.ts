@@ -1,7 +1,5 @@
-/// <reference path="Enums.ts" />
-
 //#region PluginCommand
-class PluginCommand {
+export class PluginCommand {
     // Props
     public Command: Command;
     public ServerUniqueIdentifier: string;
@@ -22,7 +20,7 @@ class PluginCommand {
 //#endregion PluginCommand
 
 //#region GameInstance
-class GameInstance {
+export class GameInstance {
     // Props
     public ServerUniqueIdentifier: string;
     public Name: string;
@@ -42,7 +40,7 @@ class GameInstance {
 //#endregion GameInstance
 
 //#region PlayerState
-class PlayerState {
+export class PlayerState {
     // Props
     public Name: string;
     public Position: Vector3Mp;
@@ -64,7 +62,7 @@ class PlayerState {
 //#endregion PlayerState
 
 //#region PhoneCommunication
-class PhoneCommunication {
+export class PhoneCommunication {
     // Props
     public Name: string;
     public SignalStrength: number;
@@ -86,7 +84,7 @@ class PhoneCommunication {
 //#endregion PhoneCommunication
 
 //#region RadioCommunication
-class RadioCommunication {
+export class RadioCommunication {
     // Props
     public Name: string;
     public SenderRadioType: RadioType;
@@ -112,7 +110,7 @@ class RadioCommunication {
 //#endregion RadioCommunication
 
 //#region RadioTower
-class RadioTower {
+export class RadioTower {
     // Props
     public Towers: Vector3Mp[];
 
@@ -124,7 +122,7 @@ class RadioTower {
 //#endregion RadioTower
 
 //#region Sound
-class Sound {
+export class Sound {
     // Props
     public Filename: string;
     public IsLoop: boolean;
@@ -140,7 +138,7 @@ class Sound {
 //#endregion Sound
 
 //#region VoiceClient
-class VoiceClient {
+export class VoiceClient {
     // Props
     public Player: PlayerMp;
     public TeamSpeakName: string;

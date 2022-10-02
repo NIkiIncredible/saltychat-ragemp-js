@@ -50,9 +50,9 @@ export class VoiceManager {
                 this.OnPlayerDisconnected(client, disconnectionType, reason);
             }
         })
-        mp.events.add(Event.SaltyChat_CheckVersion, this.OnCheckVerion);
-        mp.events.add(Event.SaltyChat_SetVoiceRange, this.OnSetVoiceRange);
-        mp.events.add(Event.SaltyChat_IsSending, this.OnSendingOnRadio);
+        mp.events.add(Event.SaltyChat_CheckVersion, (player: PlayerMp, version: string) => this.OnCheckVersion(player, version));
+        mp.events.add(Event.SaltyChat_SetVoiceRange, (player: PlayerMp, voiceRange: number) => this.OnSetVoiceRange(player, voiceRange));
+        mp.events.add(Event.SaltyChat_IsSending, (player: PlayerMp, radioChannelName: string, isSending: boolean) => this.OnSendingOnRadio(player, radioChannelName, isSending));
     }
 
     //#endregion
@@ -111,7 +111,7 @@ export class VoiceManager {
     //#endregion
 
     // #region Remote Events
-    OnCheckVerion(player: PlayerMp, version: string) {
+    OnCheckVersion(player: PlayerMp, version: string): void {
         let voiceClient: VoiceClient = this._voiceClients.get(player);
         if (voiceClient == null)
             return;
@@ -122,7 +122,7 @@ export class VoiceManager {
         }
     }
 
-    OnSetVoiceRange(player: PlayerMp, voiceRange: number) {
+    OnSetVoiceRange(player: PlayerMp, voiceRange: number): void {
         let voiceClient: VoiceClient = this._voiceClients.get(player);
         if (voiceClient == null)
             return;
@@ -140,7 +140,7 @@ export class VoiceManager {
     // #endregion
 
     // #region Remote Events (Radio)
-    OnSendingOnRadio(player: PlayerMp, radioChannelName: string, isSending: boolean) {
+    OnSendingOnRadio(player: PlayerMp, radioChannelName: string, isSending: boolean): void {
         let voiceClient: VoiceClient = this._voiceClients.get(player);
         if (voiceClient == null)
             return;
@@ -164,7 +164,7 @@ export class VoiceManager {
         return radioChannel;
     }
 
-    SetRadioSpeaker(player: PlayerMp, toggle: boolean) {
+    SetRadioSpeaker(player: PlayerMp, toggle: boolean): void {
         let voiceClient: VoiceClient = this._voiceClients.get(player);
         if (voiceClient == null)
             return;
@@ -172,7 +172,7 @@ export class VoiceManager {
         voiceClient.RadioSpeaker = toggle;
     }
 
-    JoinRadioChannel(player: PlayerMp, radioChannelName: string) {
+    JoinRadioChannel(player: PlayerMp, radioChannelName: string): void {
         let voiceClient: VoiceClient = this._voiceClients.get(player);
         if (voiceClient == null)
             return;
@@ -231,12 +231,9 @@ export class VoiceManager {
         do {
             let uuid = uuidv4()
             name = uuid.replace("-", "");
-            console.log("uuid", uuidv4())
-            console.log(name);
             if (name.length > 30) {
                 name = name.slice(0, 29);
             }
-            console.log(name);
         } while (Array.from(this._voiceClients.values()).find(c => c.TeamSpeakName == name));
         return name;
     }

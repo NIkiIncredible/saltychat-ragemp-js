@@ -1,5 +1,4 @@
-enum Command
-{
+enum Command {
     PluginState = 0,
 
     // Instance
@@ -31,8 +30,7 @@ enum Command
     StopMegaphoneCommunication = 41
 }
 
-enum PluginError
-{
+enum PluginError {
     OK = 0,
     InvalidJson = 1,
     NotConnectedToServer = 2,
@@ -42,15 +40,13 @@ enum PluginError
     InvalidValue = 6
 }
 
-enum UpdateBranch
-{
+enum UpdateBranch {
     Stable = 0,
     Testing = 1,
     PreBuild = 2
 }
 
-enum RadioType
-{
+enum RadioType {
     None = 1 << 0,
     ShortRange = 1 << 1,
     LongRange = 1 << 2,

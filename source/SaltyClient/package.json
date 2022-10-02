@@ -7,6 +7,7 @@
     "name": ""
   },
   "devDependencies": {
-    "@types/ragemp-c": "https://github.com/CocaColaBear/types-ragemp-c/tarball/master"
+    "@types/node": "^18.7.20",
+    "@types/ragemp-s": "github:CocaColaBear/types-ragemp-c#v2.0"
   }
 }

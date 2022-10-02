@@ -1,1 +1,1 @@
-require('./SaltyChat/index');
+require('./SaltyChat/SaltyClient');
