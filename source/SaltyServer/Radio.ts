@@ -1,10 +1,14 @@
 "use strict";
 import {VoiceClient} from "./VoiceClient";
-export class RadioChannel {
-    private readonly Name: string
-    private Members: RadioChannelMember[]
+import {VoiceManager} from "./VoiceManager";
+import Event from "../SaltyShared/Event";
+import {VoiceRanges} from "../SaltyShared/SharedData";
 
-    constructor(name: string, members: RadioChannelMember[]) {
+export class RadioChannel {
+    Name: string
+    Members: RadioChannelMember[]
+
+    constructor(name: string, members: RadioChannelMember[] = null) {
         this.Name = name;
         if (members != null)
             this.Members.concat(members);
@@ -14,7 +18,7 @@ export class RadioChannel {
         return this.Members.some(m => m.VoiceClient == voiceClient);
     }
 
-    AddMember(voiceClient: VoiceClient) {
+    AddMember(voiceClient: VoiceClient): void {
         if (!this.Members.some(m => m.VoiceClient == voiceClient)) {
             this.Members.push(new RadioChannelMember(this, voiceClient));
 
@@ -26,16 +30,56 @@ export class RadioChannel {
         }
     }
 
-    RemoveMember(voiceClient: VoiceClient) {
+    RemoveMember(voiceClient: VoiceClient): void {
         let member: RadioChannelMember = this.Members.find(m => m.VoiceClient == voiceClient);
-        if(member != null) {
+        if (member != null) {
             if (member.IsSending) {
-                if(member.VoiceClient.RadioSpeaker) {
-                    //RADIO 66
+                if (member.VoiceClient.RadioSpeaker) {
+                    VoiceManager.Instance.VoiceClients().forEach((client: VoiceClient) => {
+                        client.Player.call(Event.SaltyChat_IsSendingRelayed, [voiceClient.Player.id, false, true, false, "{}"])
+                    })
+                } else {
+                    this.Members.forEach((channelMember: RadioChannelMember) => {
+                        channelMember.VoiceClient.Player.call(Event.SaltyChat_IsSending, [voiceClient.Player.id, false, true])
+                    })
                 }
             }
+
+            const index = this.Members.indexOf(member);
+            if (index > -1) {
+                this.Members.splice(index, 1);
+            }
+            voiceClient.Player.call(Event.SaltyChat_SetRadioChannel, [""]);
+
+            this.Members.filter(m => m.IsSending).forEach((channelMember: RadioChannelMember) => {
+                voiceClient.Player.call(Event.SaltyChat_IsSending, [channelMember.VoiceClient.Player.id, false, false])
+            });
         }
     }
+
+    Send(voiceClient: VoiceClient, isSending: boolean): void {
+        let radioChannelMember: RadioChannelMember = this.Members.find(m => m.VoiceClient == voiceClient);
+        if (radioChannelMember == null)
+            return;
+
+        let stateChanged = radioChannelMember.IsSending != isSending;
+        radioChannelMember.IsSending = isSending;
+
+        let channelMember: RadioChannelMember[] = this.Members;
+        let onSpeaker: RadioChannelMember[] = channelMember.filter(m => m.VoiceClient.RadioSpeaker && m.VoiceClient != voiceClient);
+
+        if(onSpeaker.length > 0) {
+            let channelMemberNames: string[] = onSpeaker.map(m => m.VoiceClient.TeamSpeakName);
+            VoiceManager.Instance.VoiceClients().forEach((remoteClient: VoiceClient) => {
+                remoteClient.Player.call(Event.SaltyChat_IsSendingRelayed, [voiceClient.Player.id, isSending, stateChanged, this.IsMember(remoteClient), JSON.stringify(channelMemberNames)]);
+            })
+        } else {
+            channelMember.forEach((member: RadioChannelMember) => {
+                member.VoiceClient.Player.call(Event.SaltyChat_IsSending, [voiceClient.Player.id, isSending, stateChanged])
+            })
+        }
+    }
+
 }
 
 class RadioChannelMember {

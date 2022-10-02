@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 
 import {RadioChannel} from "./Radio";
 import {VoiceClient} from './VoiceClient'
@@ -24,13 +24,13 @@ export class VoiceManager {
             new mp.Vector3(-448.2019, 6019.807, 36.62916)
         ];
 
-    private VoiceClients: () => VoiceClient[] = (): VoiceClient[] => {
+    public VoiceClients: () => VoiceClient[] = (): VoiceClient[] => {
         return Array.from(this._voiceClients.values());
     };
     private _voiceClients: Map<PlayerMp, VoiceClient> = new Map<PlayerMp, VoiceClient>();
 
 
-    private RadioChannels: () => RadioChannel[] = (): RadioChannel[] => {
+    public RadioChannels: () => RadioChannel[] = (): RadioChannel[] => {
         return this._radioChannels
     }
     private _radioChannels: RadioChannel[] = [];
@@ -43,14 +43,16 @@ export class VoiceManager {
             "sSaltyChat-OnStart": () => {
                 this.OnResourceStart();
             },
-            "playerJoin": (player: PlayerMp) => {
+            "sSaltyChat-OnJoin": (player: PlayerMp) => {
                 this.OnPlayerConnected(player);
             },
             "playerQuit": (client: PlayerMp, disconnectionType: string, reason: string) => {
                 this.OnPlayerDisconnected(client, disconnectionType, reason);
             }
-
         })
+        mp.events.add(Event.SaltyChat_CheckVersion, this.OnCheckVerion);
+        mp.events.add(Event.SaltyChat_SetVoiceRange, this.OnSetVoiceRange);
+        mp.events.add(Event.SaltyChat_IsSending, this.OnSendingOnRadio);
     }
 
     //#endregion
@@ -105,7 +107,123 @@ export class VoiceManager {
             cl.Player.call(Event.SaltyChat_Disconnected, [voiceClient.Player.id]);
         })
     }
+
     //#endregion
+
+    // #region Remote Events
+    OnCheckVerion(player: PlayerMp, version: string) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        if (!this.IsVersionAccepted(version)) {
+            player.kick(`[Salty Chat] Required Version: ${this.MinimumPluginVersion}`);
+            return;
+        }
+    }
+
+    OnSetVoiceRange(player: PlayerMp, voiceRange: number) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        if (VoiceRanges.indexOf(voiceRange) >= 0) {
+            voiceClient.VoiceRange = voiceRange;
+
+            this.VoiceClients().forEach((client: VoiceClient) => {
+                client.Player.call(Event.SaltyChat_SetVoiceRange, [client.Player.id, client.VoiceRange])
+            })
+
+        }
+    }
+
+    // #endregion
+
+    // #region Remote Events (Radio)
+    OnSendingOnRadio(player: PlayerMp, radioChannelName: string, isSending: boolean) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+        let radioChannel: RadioChannel = this.GetRadioChannel(radioChannelName, false);
+        if (radioChannel == null || !radioChannel.IsMember(voiceClient))
+            return
+        radioChannel.Send(voiceClient, isSending);
+    }
+
+    // #endregion
+
+    //#region Methods (Radio)
+    GetRadioChannel(name: string, create: Boolean): RadioChannel {
+        let radioChannel: RadioChannel;
+
+        radioChannel = this.RadioChannels().find(r => r.Name == name);
+        if (radioChannel == null && create) {
+            radioChannel = new RadioChannel(name);
+            this._radioChannels.push(radioChannel)
+        }
+        return radioChannel;
+    }
+
+    SetRadioSpeaker(player: PlayerMp, toggle: boolean) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        voiceClient.RadioSpeaker = toggle;
+    }
+
+    JoinRadioChannel(player: PlayerMp, radioChannelName: string) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        this.RadioChannels().forEach((channel: RadioChannel) => {
+            if (channel.IsMember(voiceClient))
+                return;
+        })
+
+        const radioChannel: RadioChannel = this.GetRadioChannel(radioChannelName, true);
+        radioChannel.AddMember(voiceClient);
+    }
+
+    LeaveRadioChannel(player: PlayerMp): void {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        this.RadioChannels().filter(r => r.IsMember(voiceClient)).forEach((radioChannel: RadioChannel) => {
+            this.LeaveRadioChannelWithName(player, radioChannel.Name);
+        });
+    }
+
+    LeaveRadioChannelWithName(player: PlayerMp, radioChannelName: string): void {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        const radioChannel: RadioChannel = this.GetRadioChannel(radioChannelName, false);
+        if(radioChannel != null) {
+            radioChannel.RemoveMember(voiceClient);
+            if(radioChannel.Members.length == 0) {
+                const index = this._radioChannels.indexOf(radioChannel);
+                if(index > -1) {
+                    this._radioChannels.splice(index, 1);
+                }
+            }
+        }
+    }
+
+    SendingOnRadio(player: PlayerMp, radioChannelName: string, isSending: boolean) {
+        let voiceClient: VoiceClient = this._voiceClients.get(player);
+        if (voiceClient == null)
+            return;
+
+        const radioChannel: RadioChannel = this.GetRadioChannel(radioChannelName, false);
+        if(radioChannel == null || !radioChannel.IsMember(voiceClient))
+            return;
+        radioChannel.Send(voiceClient, isSending)
+    }
+    // #endregion
 
     //#region Methods
     GetTeamSpeakName(): string {
@@ -123,7 +241,37 @@ export class VoiceManager {
         return name;
     }
 
+    IsVersionAccepted(version: string): boolean {
+        if (!this.isNullOrWhitespace(this.MinimumPluginVersion)) {
+            let minimumVersionArray: string[] = this.MinimumPluginVersion.split('.');
+            let versionArray: string[] = version.split('.');
+
+            let lengthCounter: number = 0;
+
+            if (versionArray.length >= minimumVersionArray.length) {
+                lengthCounter = minimumVersionArray.length;
+            } else {
+                lengthCounter = versionArray.length
+            }
+
+            for (let i: number; i < lengthCounter; i++) {
+                const min: number = parseInt(minimumVersionArray[i]);
+                const cur: number = parseInt(versionArray[i]);
+
+                if (cur > min) {
+                    return true;
+                } else if (min > cur) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     //#endregion
     //#region Helper
+    isNullOrWhitespace(input) {
+        return !input || !input.trim();
+    }
     //#endregion
 }
